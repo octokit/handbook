@@ -44,6 +44,7 @@ This handbook aims to help maintainers to create and maintain Octokit libraries 
   - [Gotchas](#gotchas-3)
     - [Replication lag after creating installation token](#replication-lag-after-creating-installation-token)
     - [Scopes are not supported](#scopes-are-not-supported)
+    - [Permissions & repositories for OAuth tokens cannot be limited](#permissions--repositories-for-oauth-tokens-cannot-be-limited)
     - [Differences between api.github.com and GHE](#differences-between-apigithubcom-and-ghe-1)
 - [Actions](#actions)
 - [Shared resources](#shared-resources)
@@ -86,8 +87,7 @@ An OAuth access token can be created using the [OAuth web flow](https://docs.git
 
 - OAuth App authentication does not work for GraphQL queries
 - The API endpoint to exchange a `code` for an OAuth access token is [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github). It does not use the standard `api.github.com` host or `/v3/api` path for GitHub enterprise and is not documented as part of the REST API. The `Accept` & `Content-Type` headers must be set to `application/json`. The server does not respond with an `4xx` error code, even if the request failed. You have to check for the presence of the `"error"` response key instead.
-- The `redirect_uri` parameter for the [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github) request only serves a function if a `redirect_uri` was *also* provided in `GET https://github.com/login/oauth/authorize`. If so, and `redirect_uri` is provided both times, GitHub verify they match and respond with an error if they don't.
-
+- The `redirect_uri` parameter for the [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github) request only serves a function if a `redirect_uri` was _also_ provided in `GET https://github.com/login/oauth/authorize`. If so, and `redirect_uri` is provided both times, GitHub verify they match and respond with an error if they don't.
 
 ## JSON Web Token (GitHub App authentication)
 
