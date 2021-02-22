@@ -85,7 +85,9 @@ An OAuth access token can be created using the [OAuth web flow](https://docs.git
 **Gotchas**
 
 - OAuth App authentication does not work for GraphQL queries
-- The API endpoint to exchange a `code` for an OAuth access token is `POST http(s)://[hostname]/login/oauth/access_token`. It does not use the standard `api.github.com` host or `/v3/api` path for GitHub enterprise and is not documented as part of the REST API. The `Accept` & `Content-Type` headers must be set to `application/json`. The server does not respond with an `4xx` error code, even if the request failed. You have to check for the presence of the `"error"` response key instead.
+- The API endpoint to exchange a `code` for an OAuth access token is [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github). It does not use the standard `api.github.com` host or `/v3/api` path for GitHub enterprise and is not documented as part of the REST API. The `Accept` & `Content-Type` headers must be set to `application/json`. The server does not respond with an `4xx` error code, even if the request failed. You have to check for the presence of the `"error"` response key instead.
+- The `redirect_uri` parameter for the [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github) request only serves a function if a `redirect_uri` was *also* provided in `GET https://github.com/login/oauth/authorize`. If so, and `redirect_uri` is provided both times, GitHub verify they match and respond with an error if they don't.
+
 
 ## JSON Web Token (GitHub App authentication)
 
@@ -343,6 +345,15 @@ It is possible that when sending requests with an installation token that was cr
 ### Scopes are not supported
 
 The `?scope` query parameter is not supported for the OAuth web flow. The OAuth tokens created by GitHub apps are constrained by the permission accepted by each installation.
+
+### Permissions & repositories for OAuth tokens cannot be limited
+
+When [`creating an installation access token`](https://docs.github.com/en/rest/reference/apps#create-an-installation-access-token-for-an-app), two parameters can be passed to limit the access for the token:
+
+1. `permissions` - a subset of the installation's permissions
+2. `repositories` or `repository_ids` - a subset of the installation's repositories.
+
+There are no possibility to reduce permissions/repository access for user-to-server (OAuth) access tokens as of February 2021
 
 ### Differences between api.github.com and GHE
 
