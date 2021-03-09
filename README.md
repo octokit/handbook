@@ -69,12 +69,12 @@ An access token is passed in the `Authorization` header. Example: `Authorization
 
 - A **personal access token** can be created at https://github.com/settings/tokens/new.
 - An **OAuth access token** can be created using the [OAuth web flow](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#web-application-flow/). Note that [GitHub apps also support OAuth tokens](https://docs.github.com/en/developers/apps/identifying-and-authorizing-users-for-github-apps/), but OAuth tokens created by GitHub apps do not support scopes. Instead, they are limited to each installation's permissions.
-- A **GitHub App installation token**, created using the `[POST /app/installations/:installation_id/access_tokens](https://developer.github.com/v3/apps/#create-a-new-installation-token)` API. You must authenticate using a [GitHub App](#github-apps). Note that installation tokens expire one hour.
-- `**secrets.GITHUB_TOKEN**` provided to GitHub Actions. Technically it is a GitHub App installation token with all permissions enabled. It is invalidated after a GitHub Action run completed, or after 6 hours, whichever comes first.
+- A **GitHub App installation token**, created using the `[POST /app/installations/:installation_id/access_tokens](https://developer.github.com/v3/apps/#create-a-new-installation-token)` API. You must authenticate using a [GitHub App](#github-apps). Note that installation tokens expire after a predefined amount of time (currently 1 hour).
+- `**secrets.GITHUB_TOKEN**` provided to GitHub Actions. It is a GitHub App installation token with all permissions enabled. It is invalidated after a GitHub Action run completed, or after 6 hours, whichever comes first.
 
 **Gotchas**
 
-- Installation tokens cannot be used for authenticated git operations the same way that OAuth/Personal Access Tokens can be. E.g. this will git URL will not work `https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git`. As a workaround, this scheme works with installation tokens / GitHub Action tokens:
+- Installation tokens cannot be used for authenticated git operations the same way that OAuth/Personal Access Tokens can be. E.g. this git URL will not work `https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git`. As a workaround, this scheme works with installation tokens / GitHub Action tokens:
   `https://x-access-token:{GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git`
 
 ## `client_id` & `client_secret` (OAuth App authentication)
@@ -87,13 +87,13 @@ An OAuth access token can be created using the [OAuth web flow](https://docs.git
 
 - OAuth App authentication does not work for GraphQL queries
 - The API endpoint to exchange a `code` for an OAuth access token is [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github). It does not use the standard `api.github.com` host or `/v3/api` path for GitHub enterprise and is not documented as part of the REST API. The `Accept` & `Content-Type` headers must be set to `application/json`. The server does not respond with an `4xx` error code, even if the request failed. You have to check for the presence of the `"error"` response key instead.
-- The `redirect_uri` parameter for the [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github) request only serves a function if a `redirect_uri` was _also_ provided in `GET https://github.com/login/oauth/authorize`. If so, and `redirect_uri` is provided both times, GitHub verify they match and respond with an error if they don't.
+- The `redirect_uri` parameter for the [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github) request only serves a function if a `redirect_uri` was _also_ provided in `GET https://github.com/login/oauth/authorize`. If so, and `redirect_uri` is provided both times, GitHub verifies that they match and will respond with an error if they don't.
 
 ## JSON Web Token (GitHub App authentication)
 
-A JWT is passed in the `Authorization` header. Example: `Authorization: Bearer <your JWT here>`. In order to generate a JWT you require the GitHub Apps private key. [See Authenticating as a GitHub App](https://developer.github.com/apps/building-github-apps/authenticating-with-github-apps/#authenticating-as-a-github-app).
+A JWT is passed in the `Authorization` header. Example: `Authorization: Bearer <your JWT here>`. In order to generate a JWT, a GitHub Apps private key is required. [See Authenticating as a GitHub App](https://developer.github.com/apps/building-github-apps/authenticating-with-github-apps/#authenticating-as-a-github-app).
 
-Only few REST API endpoints require JWT authentication, see https://developer.github.com/v3/apps/
+Only a few REST API endpoints require JWT authentication, see https://developer.github.com/v3/apps/.
 
 1. All routes starting with `/app`
 2. `GET /orgs/:org/installation`
@@ -125,12 +125,12 @@ GitHub Apps can also create OAuth tokens for users, every GitHub App also has `c
 # Rest API
 
 - **complete**: create methods for all endpoints, or at least document all if the Octokit library is using a generic request library. See OpenAPI in [shared resources](#shared-resources)
-- **generated**: in order implement / document the complete set of REST API route endpoints, and to (automatically) keep it up-to-date with new endpoints, the codebase should be generated. See OpenAPI in [shared resources](#shared-resources)
+- **generated**: in order to implement and document the complete set of REST API route endpoints, and to (automatically) keep it up-to-date with new endpoints, the codebase should be generated. See OpenAPI in [shared resources](#shared-resources)
 
 ## To consider
 
 - Set media type format per request, but without overriding current accept header, as it might include previews
-- Implement `Sunset` / `Deprecation` headers: https://github.com/github/api-principles/blob/02392d276faff63c666b2f8246904bf2fe0cd9ca/lifecycle/deprecating_rest_resources.md
+- Implement `Sunset` / `Deprecation` headers (_to be documented_)
 
 ## Octokit Implementations
 
@@ -190,13 +190,13 @@ Octokit should support all GitHub Enterprise versions that are currently support
 
 Note that the base URLs are more complicated. For https://api.github.com, the root URL for all REST APIs is `https://api.github.com`, for GHE the root URL is `http(s)://[hostname]/api/v3`, except the [Management Console endpoints](https://docs.github.com/en/enterprise-server@3.0/rest/reference/enterprise-admin#endpoint-urls), which root URL is just `http(s)://hostname/`.
 
-While not directly related to the REST API, it’s worth noting that for GraphQL, the endpoint URL for `api.github.com` is `https://api.github.com/graphql`, while for GHE it’s `http(s)://[hostname]/api/graphql` 🤷
+While not directly related to the REST API, it’s worth noting that for GraphQL, the endpoint URL for `api.github.com` is `https://api.github.com/graphql`, while for GHE it’s `http(s)://[hostname]/api/graphql`.
 
 ### Preview headers
 
-Preview headers are in the process of being graduated. Instead of preview headers, new features are now being tested using beta previews that users have to opt-in.
+The concept of _preview_ headers is in the process of being deprecated. Instead of _preview_ headers, new features are now being tested using beta previews that users have to opt-in.
 
-When preview headers are set implicitly, a warning should be logged to make the user aware that these APIs are subject to change.
+When _preview_ headers are set implicitly, a warning should be logged to make the user aware that these APIs are subject to change.
 
 ### `/repositories/:id` and `/users/:id` are currently not documented / not part of the OpenAPI specification
 
@@ -244,14 +244,14 @@ If a 3rd party integration (“client”) needs to access protected resources of
 
 In order to initiate a grant authorization request, the client redirects a user to GitHub’s [authorization endpoint](https://tools.ietf.org/html/rfc6749#section-3.1) on github.com, see [Request a user’s identity](https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#1-request-a-users-github-identity).
 
-The first time the user opens the page, all scopes requested by the client are displayed for the user to review. If the user grants the authorization request, they get redirected to redirect OAuth App’s redirect URL, with an additional `?code=` query parameter set to the grant’s [authorization code](https://tools.ietf.org/html/rfc6749#section-1.3.1). GitHub does not support [implicit grants](https://tools.ietf.org/html/rfc6749#section-4.2).
+The first time the user opens the page, all scopes requested by the client are displayed for the user to review. If the user grants the authorization request, they get redirected to the OAuth App’s redirect URL, with an additional `?code=` query parameter set to the grant’s [authorization code](https://tools.ietf.org/html/rfc6749#section-1.3.1). GitHub does not support [implicit grants](https://tools.ietf.org/html/rfc6749#section-4.2).
 
 </div>
 <div style="overflow: hidden">
 
 <a href="assets/oauth-code-redirect.png"><img width=300 align=right src="assets/oauth-code-redirect.png"></a>
 
-The client then exchanges the authorization code and the OAuth App’s `client_id` and `client_secret` for an OAuth access token using using GitHub’s [token endpoint](https://tools.ietf.org/html/rfc6749#section-3.2). Note that GitHub’s OAuth Access tokens do not expire, there are no refresh tokens as described in the [OAuth 2.0 spec](https://tools.ietf.org/html/rfc6749#section-6).
+The client then exchanges the authorization code and the OAuth App’s `client_id` and `client_secret` for an OAuth access token using GitHub’s [token endpoint](https://tools.ietf.org/html/rfc6749#section-3.2). Note that GitHub’s OAuth Access tokens do not expire and there are no refresh tokens as described in the [OAuth 2.0 spec](https://tools.ietf.org/html/rfc6749#section-6).
 
 </div>
 
@@ -273,14 +273,14 @@ Besides the endpoints required by the OAuth 2.0 specification, GitHub provides a
 
 1. Check if a token is still valid (think: check session)
    [`POST /applications/:client_id/token`](https://docs.github.com/en/rest/reference/apps#check-a-token)
-2. Reset a single token(think: I’ve accidentally posted by token on twitter for everyone to see, I need to invalidate it and get a new one)
+2. Reset a single token(think: I’ve accidentally posted my token on Twitter for everyone to see, and I need to invalidate it and get a new one)
    [`PATCH /applications/:client_id/token`](https://docs.github.com/en/rest/reference/apps#reset-a-token)
-3. invalidate (revoke) a single token (think: sign out)
+3. Invalidate (revoke) a single token (think: sign out)
    [`DELETE /applications/:client_id/token`](https://docs.github.com/en/rest/reference/apps#delete-an-app-token)
 4. Invalidate (revoke) all tokens for a single user (think: uninstall the app)
    [`DELETE /applications/:client_id/grant`](https://docs.github.com/en/rest/reference/apps#delete-an-app-authorization)
 
-There are no endpoints for OAuth App clients to
+There are no endpoints for OAuth App clients to:
 
 1. Retrieve its access tokens.
 2. Retrieve its authorizations.
@@ -290,11 +290,11 @@ The client owner(s) can revoke all authorizations at once on the OAuth App’s s
 
 ## Security considerations
 
-- The `client_secret` must not be shared with user-accessible parts of the OAuth client, such as browser based application clients or native applications, in order to prevent counterfeit clients ([compare Section 10.1 of OAuth 2.0 spec](https://tools.ietf.org/html/rfc6749#section-10.1)). If an attacker would manage to intercept the redirect after authorization was granted, they could use the known `client_id` and `client_secret` to generate a token themselves. GitHub does not support the [PKCE extension](https://tools.ietf.org/html/rfc7636).
+- The `client_secret` must not be shared with user-accessible parts of the OAuth client, such as browser-based application clients or native applications, in order to prevent counterfeit clients ([compare Section 10.1 of OAuth 2.0 spec](https://tools.ietf.org/html/rfc6749#section-10.1)). If an attacker would manage to intercept the redirect after authorization was granted, they could use the known `client_id` and `client_secret` to generate a token themselves. GitHub does not support the [PKCE extension](https://tools.ietf.org/html/rfc7636).
 - The client should request access tokens with the minimal scope necessary.
-- Avoid passing access tokens as part of URLs. Browser history or request logs can expose tokens unknowingly. The client’s configured `redirect_url` must point to one of two things
+- Avoid passing access tokens as part of URLs. Browser history or request logs can expose tokens unknowingly. The client’s configured `redirect_url` must point to one of two things:
   1. The client back-end, which can directly retrieve the OAuth Access token and use it to authenticate as the user. The Authorization server can persist the token if future requests authenticated as the user will be necessary for the OAuth app.
-  2. The client front-end, which then needs to send the authorization code to the client backend in exchange for the OAuth Access token. The client back-end needs to expose a custom API endpoint for that operation. The client front-end can persist the OAuth Access token for future authentication against GitHub’s REST or GraphQL API.
+  2. The client front-end, which then needs to send the authorization code to the client back-end in exchange for the OAuth Access token. The client back-end needs to expose a custom API endpoint for that operation. The client front-end can persist the OAuth Access token for future authentication against GitHub’s REST or GraphQL API.
 
 See also: https://tools.ietf.org/html/rfc6749#section-10
 
@@ -310,11 +310,11 @@ If the app needs to send requests which are not on behalf of a user, it can pass
 ## Resources
 
 - [The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749)
-  Applied to GitHub.com, the [OAuth 2.0 roles](https://tools.ietf.org/html/rfc6749#section-1.1) are
+  Applied to GitHub.com, the [OAuth 2.0 roles](https://tools.ietf.org/html/rfc6749#section-1.1) are:
   - **resource owner**: GitHub User
   - **resource server**: api.github.com
   - **authorization server**: github.com
-  - **client**: the 3rd party integration that needs to send requests on behalf of the user. A server component is required that has access to both `client_id` and `client_secret`, in order to exchange an authorization grant for an access token.
+  - **client**: the 3rd party integration that needs to send requests on behalf of the user. A server component that has access to both `client_id` and `client_secret` is required, in order to exchange an authorization grant for an access token.
 - [Authorizating OAuth Apps on GitHub](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#web-application-flow)
 
 # Webhooks
@@ -387,9 +387,9 @@ The Octokit library reads out the token, instantiates an authenticated API to ut
 
 https://github.com/octokit/openapi
 
-JSON API specs for for all REST API endpoints for `api.github.com` as well as all currently supported GitHub Enterprise versions. [https://github.com/octokit/openapi](https://github.com/octokit/openapi) pulls changes from [GitHub's official OpenAPI spec](https://github.com/github/rest-api-description/) and adds a `x-octokit` extension with relevant information for Octokit libraries, such as a list of changes for each endpoint, so that OpenAPI operation ID changes don't need to result in breaking changes, but instead deprecations can be implemented.
+JSON API specs for all REST API endpoints for `api.github.com` as well as all currently supported GitHub Enterprise versions. [https://github.com/octokit/openapi](https://github.com/octokit/openapi) pulls changes from [GitHub's official OpenAPI spec](https://github.com/github/rest-api-description/) and adds a `x-octokit` extension with relevant information for Octokit libraries, such as a list of changes for each endpoint, so that OpenAPI operation ID changes don't need to result in breaking changes, but instead deprecations can be implemented.
 
-In order to act on new releases, install the [openapi-release-notifier](https://github.com/apps/openapi-release-notifier) GitHub App. See the app’s description for further information and an example on how trigger a GitHub Action Workflow each time a new OpenAPI spec version was released
+In order to act on new releases, install the [openapi-release-notifier](https://github.com/apps/openapi-release-notifier) GitHub App. See the app’s description for further information and an example on how to trigger a GitHub Action Workflow each time a new OpenAPI spec version is released.
 
 ## Webhooks
 
