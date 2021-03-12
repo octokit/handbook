@@ -69,13 +69,14 @@ An access token is passed in the `Authorization` header. Example: `Authorization
 
 - A **personal access token** can be created at https://github.com/settings/tokens/new.
 - An **OAuth access token** can be created using the [OAuth web flow](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#web-application-flow/). Note that [GitHub apps also support OAuth tokens](https://docs.github.com/en/developers/apps/identifying-and-authorizing-users-for-github-apps/), but OAuth tokens created by GitHub apps do not support scopes. Instead, they are limited to each installation's permissions.
-- A **GitHub App installation token**, created using the `[POST /app/installations/:installation_id/access_tokens](https://developer.github.com/v3/apps/#create-a-new-installation-token)` API. You must authenticate using a [GitHub App](#github-apps). Note that installation tokens expire after a predefined amount of time (currently 1 hour).
+- A **GitHub App installation token**, created using the [`POST /app/installations/:installation_id/access_tokens`](https://developer.github.com/v3/apps/#create-a-new-installation-token) API. You must authenticate using a [GitHub App](#github-apps). Note that installation tokens expire after a predefined amount of time (currently 1 hour).
 - `**secrets.GITHUB_TOKEN**` provided to GitHub Actions. It is a GitHub App installation token with all permissions enabled. It is invalidated after a GitHub Action run completed, or after 6 hours, whichever comes first.
 
 **Gotchas**
 
 - Installation tokens cannot be used for authenticated git operations the same way that OAuth/Personal Access Tokens can be. E.g. this git URL will not work `https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git`. As a workaround, this scheme works with installation tokens / GitHub Action tokens:
   `https://x-access-token:{GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git`
+- The [OAuth device flow](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#device-flow) does not require the `client_secret` so it can be safely used on clients without the need of maintaining a custom server. However the flow is not possible for browsers due to CORS restrictions.
 
 ## `client_id` & `client_secret` (OAuth App authentication)
 
