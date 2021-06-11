@@ -7,9 +7,11 @@ This handbook aims to help maintainers to create and maintain Octokit libraries 
 <!-- toc -->
 
 - [Authentication](#authentication)
-  - [Access Tokens](#access-tokens)
-  - [`client_id` & `client_secret` (OAuth App authentication)](#client_id--client_secret-oauth-app-authentication)
-  - [JSON Web Token (GitHub App authentication)](#json-web-token-github-app-authentication)
+  - [Personal Access Tokens](#personal-access-tokens)
+  - [User access tokens (OAuth)](#user-access-tokens-oauth)
+  - [Installation access tokens (GitHub Apps)](#installation-access-tokens-github-apps)
+  - [OAuth App authentication (`client_id`/`client_secret`)](#oauth-app-authentication-client_idclient_secret)
+  - [GitHub App authentication (JSON Web Token)](#github-app-authentication-json-web-token)
 - [Rest API](#rest-api)
   - [To consider](#to-consider)
   - [Octokit Implementations](#octokit-implementations)
@@ -34,14 +36,12 @@ This handbook aims to help maintainers to create and maintain Octokit libraries 
   - [Implementations](#implementations)
   - [GitHub’s API endpoints for OAuth App clients](#githubs-api-endpoints-for-oauth-app-clients)
   - [Security considerations](#security-considerations)
-  - [Authenticating as OAuth App](#authenticating-as-oauth-app)
-  - [Implementations](#implementations-1)
   - [Resources](#resources)
 - [Webhooks](#webhooks)
-  - [Implementations](#implementations-2)
+  - [Implementations](#implementations-1)
   - [Gotchas](#gotchas-2)
 - [GitHub Apps](#github-apps)
-  - [Implementations](#implementations-3)
+  - [Implementations](#implementations-2)
   - [Gotchas](#gotchas-3)
     - [Replication lag after creating installation token](#replication-lag-after-creating-installation-token)
     - [Scopes are not supported](#scopes-are-not-supported)
@@ -64,53 +64,81 @@ There are different means of authentication.
 
 See https://github.com/octokit/auth.js for a reference implementation for the most common strategies.
 
-## Access Tokens
+## Personal Access Tokens
 
-An access token is passed in the `Authorization` header. Example: `Authorization: token <your token here>`. Tokens can be
+Personal access tokens are passed in the `Authorization` header. Example: `Authorization: token <your token here>`.
 
-- A **personal access token** can be created at https://github.com/settings/tokens/new.
-- An **OAuth access token** can be created using the [OAuth web flow](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#web-application-flow/). Note that [GitHub apps also support OAuth tokens](https://docs.github.com/en/developers/apps/identifying-and-authorizing-users-for-github-apps/), but OAuth tokens created by GitHub apps do not support scopes. Instead, they are limited to each installation's permissions.
-- A **GitHub App installation token**, created using the [`POST /app/installations/:installation_id/access_tokens`](https://developer.github.com/v3/apps/#create-a-new-installation-token) API. You must authenticate using a [GitHub App](#github-apps). Note that installation tokens expire after a predefined amount of time (currently 1 hour).
-- `**secrets.GITHUB_TOKEN**` provided to GitHub Actions. It is a GitHub App installation token with all permissions enabled. It is invalidated after a GitHub Action run completed, or after 6 hours, whichever comes first.
+Personal access tokens cannot be created programmatically. They work the same as user access tokens created by OAuth apps. They have a set of scopes and cannot be set to expire.
+
+Personal access tokens are meant for testing. You can create one at https://github.com/settings/tokens/new.
+
+## User access tokens (OAuth)
+
+User access tokens can be created by GitHub Apps (they are called [user-to-server tokens](https://docs.github.com/en/developers/apps/identifying-and-authorizing-users-for-github-apps)) or by OAuth Apps (they are just called [access tokens](https://docs.github.com/en/developers/apps/authorizing-oauth-apps)). There are several differences betweet the user access tokens created by GitHub Apps vs OAuth Apps.
+
+1. **Access**
+
+   OAuth Apps: user access tokens have access to all of the user's repositories. Access to organizations [can be restricted](https://docs.github.com/en/github/setting-up-and-managing-organizations-and-teams/restricting-access-to-your-organizations-data). Access to organizations with restrictions enabled can be granted if the user is an owner, or [requested](https://docs.github.com/en/github/setting-up-and-managing-organizations-and-teams/approving-oauth-apps-for-your-organization) if the user is a member.
+
+   GitHub Apps: user access tokens inherit the user permissions of the app (see below) and can only access repositories and organizations that the app is installed on. Uninstalling an app or suspending an installation immediately revokes access to the respective repository/organization resources.
+
+1. **Scopes vs Permissions.**
+
+   OAuth Apps have the concept of [scopes](https://docs.github.com/en/developers/apps/scopes-for-oauth-apps#available-scopes). The app itself does not have a global set of scopes, each new user token can be granted any combination of scopes.
+
+   GitHub Apps have the concept of [permissions](https://docs.github.com/en/rest/reference/permissions-required-for-github-apps). The app registration includes permissions for repositories, organizations, and users. User permissions (e.g. `starring`, `blocking`) are inherited directly from the app's registration settings. The permissions for repositories (e.g. `issues`, `pull_requests`) and organizations (e.g. `administration`, `team_discussions`) are inherited from each installation. Installation permissions are not automatically updated, each time a GitHub App requests additional repository/organization permissions, they have to be approved for each installation.
+
+1. **Web flow**
+
+   The OAuth web flow for [OAuth Apps](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#web-application-flow) and [GitHub Apps](https://docs.github.com/en/developers/apps/identifying-and-authorizing-users-for-github-apps#web-application-flow) are nearly identical. OAuth apps accept a `?scope` query parameter to request any set of scopes.
+
+1. **Device flow**
+
+   The device flow works the same for OAuth Apps and GitHub Apps.
+
+1. **Expiring tokens**
+
+   [Expiring user access tokens](https://docs.github.com/en/developers/apps/refreshing-user-to-server-access-tokens) are only supported by GitHub Apps and are opt-in by the app owners.
+
+## Installation access tokens (GitHub Apps)
+
+Installation access tokens can be created by a GitHub App in order to access repository and organization resources for an installation. Installation access tokens expire after 1 hour. Using an installation access token, a GitHub App can interact on repositories or organizations as itself (e.g. create comments).
 
 **Gotchas**
 
 - Installation tokens cannot be used for authenticated git operations the same way that OAuth/Personal Access Tokens can be. E.g. this git URL will not work `https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git`. As a workaround, this scheme works with installation tokens / GitHub Action tokens:
   `https://x-access-token:{GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git`
-- The [OAuth device flow](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#device-flow) does not require the `client_secret` so it can be safely used on clients without the need of maintaining a custom server. However the flow is not possible for browsers due to CORS restrictions.
+- The [OAuth device flow](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#device-flow) does not require the `client_secret` so it can be safely used on clients without the need of maintaining a custom server. However, the flow is not possible for browsers due to CORS restrictions.
 
-## `client_id` & `client_secret` (OAuth App authentication)
+## OAuth App authentication (`client_id`/`client_secret`)
 
-OAuth apps can authenticate using its `client_id` and `client_secret` in order to avoid rate limiting for unauthenticated requests. `client_id` and `client_secret` have to be passed as Basic authorization in the `Authorization` header.
-
-An OAuth access token can be created using the [OAuth web flow](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#web-application-flow).
+OAuth apps can authenticate using its `client_id` and `client_secret` in order to avoid the low rate limiting for unauthenticated requests. `client_id` and `client_secret` have to be passed as Basic authorization in the `Authorization` header.
 
 **Gotchas**
 
 - OAuth App authentication does not work for GraphQL queries
 - The API endpoint to exchange a `code` for an OAuth access token is [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github). It does not use the standard `api.github.com` host or `/v3/api` path for GitHub enterprise and is not documented as part of the REST API. The `Accept` & `Content-Type` headers must be set to `application/json`. The server does not respond with an `4xx` error code, even if the request failed. You have to check for the presence of the `"error"` response key instead.
-- The `redirect_uri` parameter for the [`POST http(s)://[hostname]/login/oauth/access_token`](https://docs.github.com/en/developers/apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github) request only serves a function if a `redirect_uri` was _also_ provided in `GET https://github.com/login/oauth/authorize`. If so, and `redirect_uri` is provided both times, GitHub verifies that they match and will respond with an error if they don't.
 
-## JSON Web Token (GitHub App authentication)
+## GitHub App authentication (JSON Web Token)
 
 A JWT is passed in the `Authorization` header. Example: `Authorization: Bearer <your JWT here>`. In order to generate a JWT, a GitHub Apps private key is required. [See Authenticating as a GitHub App](https://developer.github.com/apps/building-github-apps/authenticating-with-github-apps/#authenticating-as-a-github-app).
 
-Only a few REST API endpoints require JWT authentication, see https://developer.github.com/v3/apps/.
+Only a few REST API endpoints require JWT authentication
 
 1. All routes starting with `/app`
 2. `GET /orgs/:org/installation`
 3. `GET /repos/:owner/:repo/installation`
 4. `GET /users/:username/installation`
 
-For all other routes and for GraphQL queries, an installation token needs to be created for the App.
+For all other routes and for GraphQL queries, an installation access token or user access token needs to be created.
 
-An installation access token can be retrieved using the `[POST /app/installations/:installation_id/access_tokens](https://developer.github.com/v3/apps/#create-a-new-installation-token)` endpoint. Usually the `:installation_id` is retrieved from a webhook event payload or from `[GET /app/installations](https://developer.github.com/v3/apps/#list-installations)`. Installation tokens can only access repositories that the app was installed on, and expire after 1h.
+An installation access token can be retrieved using the [`POST /app/installations/:installation_id/access_tokens`](https://docs.github.com/en/rest/reference/apps#create-an-installation-access-token-for-an-app) endpoint. Usually the `:installation_id` is retrieved from a webhook event payload or from [`GET /app/installations`](https://developer.github.com/v3/apps/#list-installations). Installation tokens can only access repositories that the app was installed on, and expire after 1h.
 
-GitHub Apps can also create OAuth tokens for users, every GitHub App also has `client_id` and `client_secret` just like OAuth Apps. These cannot be used to authenticate requests however, GitHub Apps must use JWT for that.
+GitHub Apps can also create OAuth tokens for users, every GitHub App also has `client_id` and `client_secret` just like OAuth Apps. However, these cannot be used like [OAuth App authentication](#oauth-app-authentication), GitHub Apps can only use JWT in order to authenticate as itself.
 
 **Gotchas**
 
-- OAuth App authentication does not work for GraphQL queries
+- JWT authentication does not work for GraphQL queries
 - When using an Installation Access Token directly after creation, a request might error with `401`. Not because the token is invalid, but because the token did not yet propagate across all read-only databases. See https://github.com/octokit/auth-app.js/issues/65#issuecomment-629384898 for more details
 - When receiving one of the following errors
 
@@ -277,7 +305,9 @@ The client then exchanges the authorization code and the OAuth App’s `client_i
 
 ## Implementations
 
-- Authentication strategy (server): https://github.com/octokit/auth-oauth-app.js
+- Authentication strategy for OAuth App: https://github.com/octokit/auth-oauth-app.js
+- Authentication strategy for OAuth User: https://github.com/octokit/auth-oauth-user.js
+- Authentication strategy for device flow: https://github.com/octokit/auth-oauth-device.js
 - SDK: https://github.com/octokit/oauth-app.js
 - Others: https://github.com/octokit/oauth-authorization-url.js
 
@@ -317,15 +347,6 @@ The client owner(s) can revoke all authorizations at once on the OAuth App’s s
   2. The client front-end, which then needs to send the authorization code to the client back-end in exchange for the OAuth Access token. The client back-end needs to expose a custom API endpoint for that operation. The client front-end can persist the OAuth Access token for future authentication against GitHub’s REST or GraphQL API.
 
 See also: https://tools.ietf.org/html/rfc6749#section-10
-
-## Authenticating as OAuth App
-
-If the app needs to send requests which are not on behalf of a user, it can pass its `client_id` and `client_secret` as Basic Authentication, `client_id` being the username and `client_secret` the password. This will bump the rate limiting from 60 requests per hour for anonymous requests to 5000.
-
-## Implementations
-
-- Authentication strategy: https://github.com/octokit/auth-oauth-app.js/
-- SDK: https://github.com/octokit/oauth-app.js
 
 ## Resources
 
