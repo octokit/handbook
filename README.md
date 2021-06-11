@@ -16,6 +16,7 @@ This handbook aims to help maintainers to create and maintain Octokit libraries 
   - [Gotchas](#gotchas)
     - [Inputs without namespace](#inputs-without-namespace)
     - [Some “list” endpoint response that paginate have a different response structure](#some-list-endpoint-response-that-paginate-have-a-different-response-structure)
+    - [Some “list” endpoint respond with `204` or `409` if the repository is empty](#some-list-endpoint-respond-with-204-or-409-if-the-repository-is-empty)
     - [Same route, different results](#same-route-different-results)
     - [Supporting GitHub Enterprise](#supporting-github-enterprise)
     - [Preview headers](#preview-headers)
@@ -176,6 +177,24 @@ They have a `total_count` key in the response (search also has `incomplete_resul
 An Octokit library should normalize these responses so that paginated results are always returned following the same structure.
 
 **IMPORTANT**: **If the list response has only one page, no `Link` header is provided**. Checking for the `Link` header alone is not sufficient to check whether a response is paginated or not. For the exceptions with the namespace, a fallback check for the route paths has to be added in order to normalize the response. You can check for the `total_count` property to be present, but must make sure it’s not [Get the combined status for a specific ref](https://docs.github.com/en/rest/reference/repos#get-the-combined-status-for-a-specific-reference) request, because it includes `total_count`, too, while not being a paginating response.
+
+### Some “list” endpoint respond with `204` or `409` if the repository is empty
+
+See [octokit/plugin-paginate-rest.js#158](https://github.com/octokit/plugin-paginate-rest.js/issues/158).
+
+For example, if a repository is empty:
+
+- `GET /repos/{owner}/{repo}/contributors` responds without a response body and a `204` status code
+- `GET /repos/{owner}/{repo}/commits` responds without a `409` error
+
+  ```
+  {
+    "message": "Git Repository is empty.",
+    "documentation_url": "https://docs.github.com/rest/reference/repos#list-commits"
+  }
+  ```
+
+A pagination method should return an empty array in both cases.
 
 ### Same route, different results
 
