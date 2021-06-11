@@ -16,6 +16,7 @@ This handbook aims to help maintainers to create and maintain Octokit libraries 
   - [Gotchas](#gotchas)
     - [Inputs without namespace](#inputs-without-namespace)
     - [Some “list” endpoint response that paginate have a different response structure](#some-list-endpoint-response-that-paginate-have-a-different-response-structure)
+    - [Some “list” endpoint respond with `204` or `409` if the repository is empty](#some-list-endpoint-respond-with-204-or-409-if-the-repository-is-empty)
     - [Same route, different results](#same-route-different-results)
     - [Supporting GitHub Enterprise](#supporting-github-enterprise)
     - [Preview headers](#preview-headers)
