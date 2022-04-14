@@ -12,7 +12,7 @@ This handbook aims to help maintainers to create and maintain Octokit libraries 
   - [Installation access tokens (GitHub Apps)](#installation-access-tokens-github-apps)
   - [OAuth App authentication (`client_id`/`client_secret`)](#oauth-app-authentication-client_idclient_secret)
   - [GitHub App authentication (JSON Web Token)](#github-app-authentication-json-web-token)
-- [Rest API](#rest-api)
+- [Rest API](#rest-api) 
   - [To consider](#to-consider)
   - [Octokit Implementations](#octokit-implementations)
   - [Gotchas](#gotchas)
@@ -68,7 +68,7 @@ See https://github.com/octokit/auth.js for a reference implementation for the mo
 
 Personal access tokens are passed in the `Authorization` header. Example: `Authorization: token <your token here>`.
 
-Personal access tokens cannot be created programmatically. They work the same as user access tokens created by OAuth apps. They have a set of scopes and cannot be set to expire.
+Personal access tokens cannot be created programmatically. They work the same as user access tokens created by OAuth apps. They have a set of scopes and can optionally be set to expire (the current default is 30 days from token creation).
 
 Personal access tokens are meant for testing. You can create one at https://github.com/settings/tokens/new.
 
@@ -159,7 +159,7 @@ GitHub Apps can also create OAuth tokens for users, every GitHub App also has `c
 
 ## To consider
 
-- Set media type format per request, but without overriding current accept header, as it might include previews
+- Set media type format per request, but without overriding current accept header, as it might include previews (GHE version 3.2 and lower)
 - Implement `Sunset` / `Deprecation` headers (_to be documented_)
 
 ## Octokit Implementations
@@ -234,7 +234,7 @@ If `:path` points to a folder, the response is an array of files. Otherwise the 
 
 ### Supporting GitHub Enterprise
 
-Octokit should support all GitHub Enterprise versions that are currently supported by GitHub. Besides newly introduced endpoints that are not backported to GitHub Enterprise, there are also some endpoints that are different, e.g. while endpoints on api.github.com just work, on some GHE versions they might still need preview headers.
+Octokit should support all GitHub Enterprise versions that are currently supported by GitHub. Besides newly introduced endpoints that are not backported to GitHub Enterprise, there are also some endpoints that are different, e.g. while endpoints on api.github.com just work, on some GHE versions (3.2 and below) they might still need preview headers.
 
 Note that the base URLs are more complicated. For https://api.github.com, the root URL for all REST APIs is `https://api.github.com`, for GHE the root URL is `http(s)://[hostname]/api/v3`, except the [Management Console endpoints](https://docs.github.com/en/enterprise-server@3.0/rest/reference/enterprise-admin#endpoint-urls), which root URL is just `http(s)://hostname/`.
 
@@ -242,7 +242,7 @@ While not directly related to the REST API, it’s worth noting that for GraphQL
 
 ### Preview headers
 
-The concept of _preview_ headers is in the process of being deprecated. Instead of _preview_ headers, new features are now being tested using beta previews that users have to opt-in.
+The concept of _preview_ headers has been deprecated from api.github.com but it still exists in GHE version 3.2 and below. Instead of using _preview_ headers going forward, new features are now being tested using beta previews that users have to opt-in.
 
 When _preview_ headers are set implicitly, a warning should be logged to make the user aware that these APIs are subject to change.
 
@@ -276,9 +276,9 @@ _TBD_, see https://github.com/octokit/graphql.js/issues/61#issuecomment-64339249
 
 ### Preview headers
 
-_TBD_
+The concept of _preview_ headers is in the process of being deprecated.
 
-### Differences between api.github.com and GHE
+### Differences between api.github.com and GHE 
 
 _TBD_
 
