@@ -12,7 +12,7 @@ This handbook aims to help maintainers to create and maintain Octokit libraries 
   - [Installation access tokens (GitHub Apps)](#installation-access-tokens-github-apps)
   - [OAuth App authentication (`client_id`/`client_secret`)](#oauth-app-authentication-client_idclient_secret)
   - [GitHub App authentication (JSON Web Token)](#github-app-authentication-json-web-token)
-- [Rest API](#rest-api) 
+- [Rest API](#rest-api)
   - [To consider](#to-consider)
   - [Octokit Implementations](#octokit-implementations)
   - [Gotchas](#gotchas)
@@ -278,7 +278,7 @@ _TBD_, see https://github.com/octokit/graphql.js/issues/61#issuecomment-64339249
 
 The concept of _preview_ headers is in the process of being deprecated.
 
-### Differences between api.github.com and GHE 
+### Differences between api.github.com and GHE
 
 _TBD_
 
