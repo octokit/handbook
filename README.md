@@ -24,7 +24,7 @@ This handbook aims to help maintainers to create and maintain Octokit libraries 
     - [Preview headers](#preview-headers)
     - [`/repositories/:id` and `/users/:id` are currently not documented / not part of the OpenAPI specification](#repositoriesid-and-usersid-are-currently-not-documented--not-part-of-the-openapi-specification)
     - [URL parameters should be encoded](#url-parameters-should-be-encoded)
-    - [Rate & Abuse limits](#rate--abuse-limits)
+    - [Rate limits](#rate-limits)
     - [200 Response to HEAD requests](#200-response-to-head-requests)
 - [GraphQL](#graphql)
   - [Implementations:](#implementations)
@@ -254,9 +254,11 @@ Repositories and usernames can change. For integrators, it would be more appropr
 
 For example: [`GET /repos/{owner}/{repo}/compare/{base}...{head}`](https://docs.github.com/en/rest/reference/repos#compare-two-commits). The `base` and `head` parameters are branch names, which can include `/` and other special characters.
 
-### Rate & Abuse limits
+### Rate limits
 
-See https://docs.github.com/en/rest/guides/best-practices-for-integrators#dealing-with-rate-limits and https://docs.github.com/en/rest/guides/best-practices-for-integrators#dealing-with-abuse-rate-limits
+See https://docs.github.com/en/rest/guides/best-practices-for-integrators#dealing-with-rate-limits and https://docs.github.com/en/rest/guides/best-practices-for-integrators?apiVersion=2022-11-28#dealing-with-secondary-rate-limits
+
+One important gotcha is that in some circumstances, a `Retry-After` header will not be set in case of a secondary rate limit. In that case the time to wait should default to 60 seconds.
 
 ### 200 Response to HEAD requests
 
