@@ -272,6 +272,8 @@ Some of GitHub's REST API endpoints respond with a `200` status to `HEAD` reques
 
 ## Gotchas
 
+- Watch this talk: https://www.youtube.com/watch?v=i5pIszu9MeM
+
 ### Pagination
 
 _TBD_, see https://github.com/octokit/graphql.js/issues/61#issuecomment-643392492 for an idea how a generic pagination API could be implemented for GraphQL
