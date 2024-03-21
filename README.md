@@ -139,7 +139,7 @@ GitHub Apps can also create OAuth tokens for users, every GitHub App also has `c
 **Gotchas**
 
 - JWT authentication does not work for GraphQL queries
-- When using an Installation Access Token directly after creation, a request might error with `401`. Not because the token is invalid, but because the token did not yet propagate across all read-only databases. See https://github.com/octokit/auth-app.js/issues/65#issuecomment-629384898 for more details
+- When using an Installation Access Token directly after creation, a request might error with `401` or `403`. Not because the token is invalid or the permissions are not sufficient, but because the token or the permissions did not yet propagate across all read-only databases. See https://github.com/octokit/auth-app.js/issues/65 and https://github.com/octokit/auth-app.js/issues/589 for more details
 - When receiving one of the following errors
 
   > 'Expiration time' claim ('exp') must be a numeric value representing the future time at which the assertion expires
